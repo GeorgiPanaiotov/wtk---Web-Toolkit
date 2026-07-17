@@ -12,6 +12,7 @@ int mfv_main(int argc, char *argv[])
 
   mfv_walk(&project, argv[1]);
 
+  printf("Scan Complete\n");
   verify_and_report(&project);
   cleanup_project(&project);
   return 0;

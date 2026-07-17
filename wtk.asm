@@ -87,7 +87,8 @@ help_len = 			$ - str_help
 error_msg       db      "Not enough arguments were provided! See --help for usage", 10
 error_msg_len = $ - error_msg
 
-help_msg        db      "Programs: ", 10
+help_msg        db			"Usage: wtk <program_name> [args...]", 10
+        				db      "Programs: ", 10
 								db      " mfv - Missing Files Verifier", 10
 help_msg_len = 	$ - help_msg
 
