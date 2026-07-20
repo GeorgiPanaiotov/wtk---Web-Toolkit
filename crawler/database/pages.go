@@ -2,7 +2,6 @@ package database
 
 import (
 	"database/sql"
-	"log"
 )
 
 type Page struct {
@@ -26,12 +25,19 @@ func InsertPage(db *sql.DB, url string, title string, content string, content_le
 
 func GetAllPages(db *sql.DB) ([]Page, error) {
 	query := `
-		SELECT * FROM pages;
+		SELECT 
+			id,
+			url,
+			title,
+			content,
+			crawled_at,
+			content_length
+		FROM pages;
 	`
 
 	rows, err := db.Query(query)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -42,7 +48,7 @@ func GetAllPages(db *sql.DB) ([]Page, error) {
 		err := rows.Scan(&page.ID, &page.URL, &page.Title, &page.Content, &page.CrawledAt, &page.ContentLength)
 
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		pages = append(pages, page)
