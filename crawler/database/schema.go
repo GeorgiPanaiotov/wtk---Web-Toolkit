@@ -20,11 +20,6 @@ func InitSchema(db *sql.DB) error {
 		return err
 	}
 
-	err = InitCookies(db)
-	if err != nil {
-		return err
-	}
-
 	return err
 }
 
@@ -73,30 +68,7 @@ func InitHeaders(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS headers (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			response_id INTEGER NOT NULL,
-			name TEXT,
-			value TEXT,
-
-			FOREIGN KEY(response_id) REFERENCES responses(id)
-		);
-	`
-
-	_, err := db.Exec(query)
-
-	if err != nil {
-		return err
-	}
-	return err
-}
-
-func InitCookies(db *sql.DB) error {
-	query := `
-		CREATE TABLE IF NOT EXISTS cookies (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			response_id INTEGER NOT NULL,
-			name TEXT,
-			value TEXT,
-			expires DATETIME DEFAULT CURRENT_TIMESTAMP,
-			secure INTEGER NOT NULL,
+			headers TEXT,
 
 			FOREIGN KEY(response_id) REFERENCES responses(id)
 		);

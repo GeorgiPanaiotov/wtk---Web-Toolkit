@@ -4,7 +4,6 @@ import (
 	"crawler/database"
 	"crawler/spider"
 	"fmt"
-	"io"
 	"log"
 	"os"
 )
@@ -32,12 +31,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	body, err := io.ReadAll(res.Body)
+	err = database.InsertPageRecord(db, res)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
 	}
-
-	database.InsertPage(db, res.Request.URL.String(), res.Request.URL.Host, string(body), res.ContentLength)
 
 	pages, err := database.GetAllPages(db)
 
