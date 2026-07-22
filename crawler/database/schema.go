@@ -29,7 +29,8 @@ func InitPages(db *sql.DB) error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			url TEXT NOT NULL UNIQUE,
 			host TEXT,
-			crawled_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			crawled_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			status TEXT NOT NULL DEFAULT 'queued'
 		);
 	`
 

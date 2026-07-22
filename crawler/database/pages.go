@@ -22,49 +22,39 @@ type Page struct {
 	HeaderID      int64
 }
 
-func InsertPageRecord(db *sql.DB, res *http.Response) error {
+func InsertPageRecord(db *sql.DB, pageID int, res *http.Response) ([]byte, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	pageResult, err := InsertPage(db, res.Request.URL.String(), res.Request.URL.Host)
+	responseResult, err := InsertResponse(db, int64(pageID), int64(res.StatusCode), res.Header.Get("Content-Type"), res.ContentLength, string(body))
 	if err != nil {
-		return err
-	}
-
-	page_id, err := pageResult.LastInsertId()
-	if err != nil {
-		return err
-	}
-
-	responseResult, err := InsertResponse(db, page_id, int64(res.StatusCode), res.Header.Get("Content-Type"), res.ContentLength, string(body))
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	response_id, err := responseResult.LastInsertId()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var buffer bytes.Buffer
 	err = res.Header.Write(&buffer)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = InsertHeaders(db, response_id, buffer.String())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return err
+	return body, err
 }
 
 func InsertPage(db *sql.DB, url string, host string) (sql.Result, error) {
 	query := `
-		INSERT INTO pages (url, host)
+		INSERT OR IGNORE INTO pages (url, host)
 		VALUES (?, ?);
 	`
 
@@ -95,9 +85,7 @@ func InsertHeaders(db *sql.DB, response_id int64, headers string) error {
 	`
 
 	_, err := db.Exec(query, response_id, headers)
-	if err != nil {
-		return err
-	}
+
 	return err
 }
 
@@ -153,4 +141,34 @@ func GetAllPages(db *sql.DB) ([]Page, error) {
 	}
 
 	return pages, rows.Err()
+}
+
+func GetNextPage(db *sql.DB) (*Page, error) {
+	query := `
+		SELECT
+			id,
+			url
+		FROM pages
+		WHERE status = 'queued'
+		LIMIT 1;
+	`
+
+	var page Page
+	err := db.QueryRow(query).Scan(&page.ID, &page.URL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &page, nil
+}
+
+func UpdateStatus(db *sql.DB, id int, status string) error {
+	query := `
+		UPDATE pages
+		SET status = ?
+		WHERE id = ?
+	`
+	_, err := db.Exec(query, status, id)
+
+	return err
 }

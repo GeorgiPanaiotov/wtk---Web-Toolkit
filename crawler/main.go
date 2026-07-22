@@ -1,11 +1,17 @@
 package main
 
 import (
+	"bytes"
 	"crawler/database"
 	"crawler/spider"
+	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
+	"strings"
+
+	"golang.org/x/net/html"
 )
 
 func main() {
@@ -26,23 +32,82 @@ func main() {
 	}
 	log.Printf("Database Ready!\n")
 
-	res, err := spider.Fetch(os.Args[1])
+	parsedURL, err := url.Parse(os.Args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = database.InsertPageRecord(db, res)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	pages, err := database.GetAllPages(db)
-
+	_, err = database.InsertPage(db, os.Args[1], parsedURL.Host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, page := range pages {
-		fmt.Println(page.URL)
+	for {
+		page, err := database.GetNextPage(db)
+		if err == sql.ErrNoRows {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = database.UpdateStatus(db, page.ID, "fetching")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		res, err := spider.Fetch(page.URL)
+		if err != nil {
+			err = database.UpdateStatus(db, page.ID, "failed")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			continue
+		}
+
+		var content_type = res.Header.Get("Content-Type")
+
+		if !strings.Contains(content_type, "text/html") {
+			fmt.Print("The page doesn't contain HTML! Nothing will be written in the database")
+		} else {
+			body, err := database.InsertPageRecord(db, page.ID, res)
+			if err != nil {
+				err = database.UpdateStatus(db, page.ID, "failed")
+				if err != nil {
+					log.Fatal(err)
+				}
+				continue
+			}
+
+			doc, err := html.Parse(bytes.NewReader(body))
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			links, err := spider.ExtractLinks(res.Request.URL, doc)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			err = database.UpdateStatus(db, page.ID, "done")
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer res.Body.Close()
+
+			for _, link := range links {
+				parsed, err := url.Parse(link)
+				if err != nil {
+					continue
+				}
+
+				_, err = database.InsertPage(db, parsed.String(), parsed.Host)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
 	}
+	db.Close()
 }
