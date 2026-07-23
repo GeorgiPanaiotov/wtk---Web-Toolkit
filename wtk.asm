@@ -1,11 +1,12 @@
 format ELF64
 
 	extrn   mfv_main
+	extrn 	crawler_main
 
 public main
 
 SYS_WRITE       equ     1
-SYS_EXIT        equ     60
+SYS_EXIT        equ     231
 
 macro write fd, buffer, count
 	{
@@ -56,6 +57,11 @@ main:
 	pop     rdi
 	pop     rsi
 
+	comp    str_crawler, crawler_len
+	je      .run_crawler
+	pop     rdi
+	pop     rsi
+	
 	comp    str_help, help_len
 	je      .help
 
@@ -76,10 +82,19 @@ main:
 	add     rsp, 8
 	exit    0
 
+.run_crawler:
+	prepreg 8
+	call 		crawler_main
+
+	add rsp, 8
+	exit 0
 
 section '.data'
 str_mfv         db      "mfv", 0
 mfv_len =				$ - str_mfv
+
+str_crawler         db      "crawler", 0
+crawler_len =				$ - str_crawler
 
 str_help        db      "--help", 0
 help_len = 			$ - str_help
@@ -90,6 +105,7 @@ error_msg_len = $ - error_msg
 help_msg        db			"Usage: wtk <program_name> [args...]", 10
         				db      "Programs: ", 10
 								db      " mfv - Missing Files Verifier", 10
+								db			" crawler - Web Crawler", 10
 help_msg_len = 	$ - help_msg
 
 section '.note.GNU-stack'

@@ -1,5 +1,7 @@
 package main
 
+import "C"
+
 import (
 	"bytes"
 	"crawler/database"
@@ -14,8 +16,15 @@ import (
 	"golang.org/x/net/html"
 )
 
-func main() {
-	if len(os.Args) < 2 {
+//export crawler_main
+func crawler_main() {
+	args := os.Args
+	if len(args) > 0 && args[0] != "crawler" {
+		if len(args) > 1 && args[1] == "crawler" {
+			args = args[1:]
+		}
+	}
+	if len(args) < 2 {
 		log.Printf("Please provide a target url in the following format: 'https://example.com'\n")
 		return
 	}
@@ -32,12 +41,12 @@ func main() {
 	}
 	log.Printf("Database Ready!\n")
 
-	parsedURL, err := url.Parse(os.Args[1])
+	parsedURL, err := url.Parse(args[1])
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = database.InsertPage(db, os.Args[1], parsedURL.Host)
+	_, err = database.InsertPage(db, args[1], parsedURL.Host)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,3 +140,5 @@ func main() {
 	}
 	db.Close()
 }
+
+func main() {}
