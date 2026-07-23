@@ -6,19 +6,9 @@ import (
 
 func InitSchema(db *sql.DB) error {
 	err := InitPages(db)
-	if err != nil {
-		return err
-	}
-
 	err = InitResponses(db)
-	if err != nil {
-		return err
-	}
-
 	err = InitHeaders(db)
-	if err != nil {
-		return err
-	}
+	err = ResetFetching(db)
 
 	return err
 }
@@ -35,10 +25,6 @@ func InitPages(db *sql.DB) error {
 	`
 
 	_, err := db.Exec(query)
-
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -57,10 +43,6 @@ func InitResponses(db *sql.DB) error {
 	`
 
 	_, err := db.Exec(query)
-
-	if err != nil {
-		return err
-	}
 	return err
 }
 
@@ -76,9 +58,16 @@ func InitHeaders(db *sql.DB) error {
 	`
 
 	_, err := db.Exec(query)
+	return err
+}
 
-	if err != nil {
-		return err
-	}
+func ResetFetching(db *sql.DB) error {
+	query := `
+		UPDATE pages
+		SET status = 'queued'
+		WHERE status = 'fetching';
+	`
+
+	_, err := db.Exec(query)
 	return err
 }

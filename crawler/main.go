@@ -66,10 +66,22 @@ func main() {
 			continue
 		}
 
+		if res.StatusCode == 404 {
+			err = database.UpdateStatus(db, page.ID, "done")
+			if err != nil {
+				log.Fatal(err)
+			}
+			continue
+		}
+
 		var content_type = res.Header.Get("Content-Type")
 
 		if !strings.Contains(content_type, "text/html") {
-			fmt.Print("The page doesn't contain HTML! Nothing will be written in the database")
+			fmt.Print("The page doesn't contain HTML! Nothing will be written in the database\n")
+			err = database.UpdateStatus(db, page.ID, "done")
+			if err != nil {
+				log.Fatal(err)
+			}
 		} else {
 			body, err := database.InsertPageRecord(db, page.ID, res)
 			if err != nil {
