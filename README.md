@@ -28,7 +28,7 @@ The repo includes already built files for the sake of shipping with precompiled 
 - ### wtk <app> <input>
 wtk is the main executable, it is where each other app can be called from. It is written in **Assembly** and acts as the delegator of the whole application
 
-- ### tk mfv <input>
+- ### wtk mfv <input>
 mfv is the Missing File Validator program. Can be used with a directory or a single file as input. If a directory is provided it will recursively walk all the sub-directories, collect image files along the way while also upon encountering text files like html as one example, will look for references to files in the filesystem and finally produce an output of all the missing files.
   - Provides a list of all the files that contain missing content
   - Provides the full path to each file that references missing content
