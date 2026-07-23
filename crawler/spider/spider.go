@@ -29,6 +29,10 @@ func ExtractLinks(base *url.URL, doc *html.Node) ([]string, error) {
 					if err != nil {
 						continue
 					}
+
+					u.Fragment = ""
+					u.RawQuery = ""
+
 					links = append(links, u.String())
 					break
 				}

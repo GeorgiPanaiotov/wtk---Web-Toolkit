@@ -79,6 +79,7 @@ func main() {
 				}
 				continue
 			}
+			res.Body.Close()
 
 			doc, err := html.Parse(bytes.NewReader(body))
 			if err != nil {
@@ -94,11 +95,18 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			defer res.Body.Close()
 
 			for _, link := range links {
 				parsed, err := url.Parse(link)
 				if err != nil {
+					continue
+				}
+
+				if parsed.Host != parsedURL.Host {
+					continue
+				}
+
+				if parsed.Scheme != "http" && parsed.Scheme != "https" {
 					continue
 				}
 
