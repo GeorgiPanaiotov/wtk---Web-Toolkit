@@ -19,15 +19,44 @@ import (
 //export crawler_main
 func crawler_main() {
 	args := os.Args
-	if len(args) > 0 && args[0] != "crawler" {
-		if len(args) > 1 && args[1] == "crawler" {
-			args = args[1:]
+	if len(args) > 1 && args[1] == "crawler" {
+		args = args[1:]
+	}
+
+	var (
+		target  string
+		verbose bool
+	)
+
+	for _, arg := range args[1:] {
+		switch arg {
+		case "-v":
+			verbose = true
+		case "--help":
+			fmt.Printf("Usage: crawler [-v] <target_url>\n\n")
+			fmt.Printf("\t -v: Verbose mode\n")
+			fmt.Printf("Please provide a target url in the following format: 'https://example.com'\n")
+			return
+		default:
+			if strings.HasPrefix(arg, "-") {
+				fmt.Printf("Unknown option: %s\n", arg)
+				return
+			}
+
+			if target == "" {
+				target = arg
+			} else {
+				fmt.Printf("Unexpected argument: %s\n", arg)
+				return
+			}
 		}
 	}
-	if len(args) < 2 {
-		log.Printf("Please provide a target url in the following format: 'https://example.com'\n")
+
+	if target == "" || !strings.Contains(target, "http") {
+		fmt.Println("Missing target URL")
 		return
 	}
+
 	db, err := database.New()
 
 	if err != nil {
@@ -39,14 +68,13 @@ func crawler_main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("Database Ready!\n")
 
-	parsedURL, err := url.Parse(args[1])
+	parsedURL, err := url.Parse(target)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	_, err = database.InsertPage(db, args[1], parsedURL.Host)
+	_, err = database.InsertPage(db, target, parsedURL.Host)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,6 +91,10 @@ func crawler_main() {
 		err = database.UpdateStatus(db, page.ID, "fetching")
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		if verbose {
+			fmt.Printf("FETCHING: %s\n", page.URL)
 		}
 
 		res, err := spider.Fetch(page.URL)
@@ -138,7 +170,37 @@ func crawler_main() {
 			}
 		}
 	}
+
+	PrintStats(db)
+
 	db.Close()
+}
+
+func PrintStats(db *sql.DB) {
+	stats, err := database.GetStatistics(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println()
+	fmt.Println("Statistics")
+	fmt.Println("------------------")
+	fmt.Printf("Pages discovered : %d\n", stats.TotalPages)
+	fmt.Printf("Pages crawled    : %d\n", stats.CrawledPages)
+	fmt.Printf("Pages queued     : %d\n", stats.QueuedPages)
+	fmt.Printf("Pages failed     : %d\n", stats.FailedPages)
+	fmt.Println()
+	fmt.Printf("Responses stored : %d\n", stats.ResponsesStored)
+	fmt.Println()
+	fmt.Printf("HTML pages       : %d\n", stats.HTMLPages)
+	fmt.Printf("Non-HTML pages   : %d\n", stats.NonHTMLPages)
+	fmt.Println()
+	fmt.Println("Top Hosts")
+	fmt.Println("---------")
+
+	for host, count := range stats.TopHosts {
+		fmt.Printf("%-30s %d\n", host, count)
+	}
 }
 
 func main() {}

@@ -22,6 +22,17 @@ type Page struct {
 	HeaderID      int64
 }
 
+type Stats struct {
+	TotalPages      int
+	CrawledPages    int
+	QueuedPages     int
+	FailedPages     int
+	ResponsesStored int
+	HTMLPages       int
+	NonHTMLPages    int
+	TopHosts        map[string]int
+}
+
 func InsertPageRecord(db *sql.DB, pageID int, res *http.Response) ([]byte, error) {
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -171,4 +182,64 @@ func UpdateStatus(db *sql.DB, id int, status string) error {
 	_, err := db.Exec(query, status, id)
 
 	return err
+}
+
+func GetStatistics(db *sql.DB) (*Stats, error) {
+	stats := &Stats{}
+
+	err := db.QueryRow(`SELECT COUNT (*) FROM pages; `).Scan(&stats.TotalPages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM pages WHERE status = 'done'; `).Scan(&stats.CrawledPages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM pages WHERE status = 'queued'; `).Scan(&stats.QueuedPages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM pages WHERE status = 'failed'; `).Scan(&stats.FailedPages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM responses; `).Scan(&stats.ResponsesStored)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM responses WHERE content_type LIKE 'text/html%'; `).Scan(&stats.HTMLPages)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.QueryRow(`SELECT COUNT(*) FROM responses WHERE content_type NOT LIKE 'text/html%'; `).Scan(&stats.NonHTMLPages)
+	if err != nil {
+		return nil, err
+	}
+
+	stats.TopHosts = make(map[string]int)
+
+	rows, err := db.Query(`SELECT host, COUNT(*) FROM pages GROUP BY host ORDER BY COUNT(*) DESC LIMIT 20; `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var host string
+		var count int
+
+		if err := rows.Scan(&host, &count); err != nil {
+			return nil, err
+		}
+
+		stats.TopHosts[host] = count
+	}
+
+	return stats, rows.Err()
 }
