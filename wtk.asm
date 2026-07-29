@@ -2,6 +2,7 @@ format ELF64
 
 	extrn   mfv_main
 	extrn 	crawler_main
+  extrn   dnsr_main
 
 public main
 
@@ -61,6 +62,11 @@ main:
 	je      .run_crawler
 	pop     rdi
 	pop     rsi
+
+  comp    str_dnsr, dnsr_len
+  je      .run_dnsr
+  pop     rdi
+  pop     rsi
 	
 	comp    str_help, help_len
 	je      .help
@@ -74,6 +80,13 @@ main:
 .err:
 	write   1, error_msg, error_msg_len
 	exit    1
+
+.run_dnsr:
+	prepreg 8
+	call    dnsr_main
+
+	add     rsp, 8
+	exit    0
 
 .run_mfv:
 	prepreg 8
@@ -93,8 +106,11 @@ section '.data'
 str_mfv         db      "mfv", 0
 mfv_len =				$ - str_mfv
 
-str_crawler         db      "crawler", 0
-crawler_len =				$ - str_crawler
+str_crawler     db      "crawler", 0
+crawler_len =		$ - str_crawler
+
+str_dnsr        db      "dnsr", 0
+dnsr_len =			$ - str_dnsr
 
 str_help        db      "--help", 0
 help_len = 			$ - str_help
@@ -106,6 +122,7 @@ help_msg        db			"Usage: wtk <program_name> [args...]", 10
         				db      "Programs: ", 10
 								db      " mfv - Missing Files Verifier", 10
 								db			" crawler - Web Crawler", 10
+								db			" dnsr - DNS Resolver", 10
 help_msg_len = 	$ - help_msg
 
 section '.note.GNU-stack'
