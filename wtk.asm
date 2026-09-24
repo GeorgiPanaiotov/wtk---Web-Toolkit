@@ -3,7 +3,6 @@ format ELF64
 	extrn   mfv_main
 	extrn 	crawler_main
   extrn   dnsr_main
-  extrn   ap_main
 
 public main
 
@@ -69,11 +68,6 @@ main:
   pop     rdi
   pop     rsi
 
-  comp    str_ap, ap_len
-  je      .run_ap
-  pop     rdi
-  pop     rsi	
-
 	comp    str_help, help_len
 	je      .help
 
@@ -107,13 +101,6 @@ main:
 
 	add     rsp, 8
 	exit    0
-
-.run_ap:
-  prepreg 8
-  call    ap_main
-
-  add     rsp, 8
-  exit    0
 
 section '.data'
 str_mfv         db      "mfv", 0
