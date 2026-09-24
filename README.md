@@ -62,6 +62,14 @@ crawler is the Crawler program. It accepts a URL as input. It creates an SQLite 
 For example if provided with `https://my-website.com`, the crawler will never go to `https://your-website.com` even if both have references to each other.  
 The crawler collects the hosts, compares uniqueness in order not to crawl the same pages more than once, self restarts from where it left off if forcefully stopped with `Ctrl + c` or any other way, and stores all the hosts, status codes, headers and html, plus other things.
 
+- ### wtk dnsr <input>
+dnsr is the DNS resolver program. It accepts an URL as input. It returns the IP address which the domain resolves to
+
+```
+wtk dnsr https://google.com
+Domain: 'google.com' resolved to IP: 142.251.142.110 (TTL: 291 sec) (CLASS: 1) (PACKETS_SENT: 28) (PACKETS_RECEIVED: 44)
+```
+
 - ### wtk mirror <input>
 mirror is the Mirror program. Currently not implemented yet.
 
